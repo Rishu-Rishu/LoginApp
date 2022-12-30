@@ -8,10 +8,18 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailAuthenticationException;
+import org.springframework.mail.MailException;
+import org.springframework.mail.MailParseException;
+import org.springframework.mail.MailSendException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import com.ris.model.City;
 import com.ris.model.Country;
+import com.ris.model.EmailDetails;
 import com.ris.model.LoginForm;
 import com.ris.model.State;
 import com.ris.model.UnlockAccForm;
@@ -39,6 +47,12 @@ public class UserMgmtServiceImpl implements IUserMgmtService {
 	
 	@Autowired
 	private IUserMgmtUserRepository userRepo;
+	
+	@Autowired
+	private JavaMailSender javaMailSender;
+	
+	@Value("${spring.mail.username}")
+	private String sender;
 	
 	@Override
 	public String checkEmail(String email) {
@@ -123,11 +137,49 @@ public class UserMgmtServiceImpl implements IUserMgmtService {
 	public String forgotPwd(String email) {
 		User user = userRepo.findByEmailId(email);
 		if (user !=null) {
-			//write logic to send email for temp pwd
-			return "Temp pwd sent successfully, Please check your email";
+			String emailId = user.getEmailId();
+			String pwd = "abc123";
+			EmailDetails details = new EmailDetails();
+			details.setRecipient(emailId);
+			details.setSubject("Unlock IES Account");
+			details.setMsgBody(
+				"Hi "+ user.getFirstName() + " ," + user.getLastName() + ": \n" 
+				+ "Welcome to IES Family, Your registration is almost complete. \n"
+				+ "Please Unlock your account using below details."
+				+ "Temporary password : " + pwd + " \n"
+				+ "<a href='http://localhost:8080/home'>Link to Unlock Account</a>"
+				);
+			return sendEmail(details);
 		}else{
 			return "User Not registered with above email id";
 		}
 	}
+
+	@Override
+	public String sendEmail(EmailDetails emailDetails) {
+		try {
+			SimpleMailMessage mailMessage = new SimpleMailMessage();
+			mailMessage.setFrom(sender);
+			mailMessage.setTo(emailDetails.getRecipient());
+			mailMessage.setText(emailDetails.getMsgBody());
+			mailMessage.setSubject(emailDetails.getSubject());
+			
+			javaMailSender.send(mailMessage); 
+			//send(mailMessage);
+			return "Temp pwd sent successfully, Please check your email";
+		}catch(MailParseException mpe){
+				return "parsing the message:";
+		}catch(MailAuthenticationException mae) {
+			return " in case of authentication failure";
+		}catch(MailSendException mse) {
+			return " in case of failure when sending the message";
+		}catch(MailException me) {
+			return "Error MailException sending email";
+		}catch(Exception e) {
+			return "Error while sending email";
+		}
+	}
+	
+	
 
 }

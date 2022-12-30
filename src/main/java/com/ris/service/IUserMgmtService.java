@@ -5,6 +5,7 @@ package com.ris.service;
 
 import java.util.Map;
 
+import com.ris.model.EmailDetails;
 import com.ris.model.LoginForm;
 import com.ris.model.UnlockAccForm;
 import com.ris.model.User;
@@ -30,4 +31,6 @@ public interface IUserMgmtService {
 	public String login (LoginForm loginForm);
 
 	public String forgotPwd (String email);
+	
+	public String sendEmail(EmailDetails emailDetails);
 }
